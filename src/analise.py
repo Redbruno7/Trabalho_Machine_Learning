@@ -1,18 +1,24 @@
+from sklearn.tree import DecisionTreeClassifier
+from sklearn.model_selection import train_test_split
+from sklearn.preprocessing import StandardScaler
+from sklearn.datasets import load_wine
+
+from sklearn.metrics import (
+    accuracy_score,
+    recall_score,
+    confusion_matrix
+)
+
+from sklearn.metrics import ConfusionMatrixDisplay
+import matplotlib.pyplot as plt
+import pandas as pd
+import numpy as np
 import os
 import matplotlib
-
 matplotlib.use("Agg")
-
-import numpy as np
-import pandas as pd
-import matplotlib.pyplot as plt
-
-from sklearn.datasets import load_wine
-from sklearn.preprocessing import StandardScaler
 
 
 os.system('cls')
-
 wine = load_wine()
 
 dados = pd.DataFrame(
@@ -108,12 +114,82 @@ plt.tight_layout()
 plt.savefig("graficos/distribuicao_atributos.png")
 plt.close()
 
-# Separar os atributos (X) e a variável alvo (y)
+# Separar os dados em variáveis independentes (X) e variável dependente (y)
 X = dados.drop(columns="classe")
 y = dados["classe"]
 
-# Padronizar os dados utilizando o StandardScaler
+# Divisão dos dados em conjuntos de treinamento e teste
+X_treino, X_teste, y_treino, y_teste = train_test_split(
+    X,
+    y,
+    test_size=0.2,
+    random_state=42,
+    stratify=y
+)
+
+print("\nDados de treinamento:", X_treino.shape)
+print("Dados de teste:", X_teste.shape)
+
+# Padronização dos dados
 scaler = StandardScaler()
-X_padronizado = scaler.fit_transform(X)
-print()
-print("\nFormato dos dados padronizados:", X_padronizado.shape)
+X_treino_padronizado = scaler.fit_transform(X_treino)
+X_teste_padronizado = scaler.transform(X_teste)
+print("\nDados de treinamento padronizados:", X_treino_padronizado.shape)
+print("Dados de teste padronizados:", X_teste_padronizado.shape)
+
+# Treinamento do modelo de Árvore de Decisão
+modelo_arvore = DecisionTreeClassifier(
+    random_state=42
+)
+
+modelo_arvore.fit(
+    X_treino_padronizado,
+    y_treino
+)
+
+# Avaliação do modelo de Árvore de Decisão
+y_pred_arvore = modelo_arvore.predict(
+    X_teste_padronizado
+)
+
+print("\nPredições da Árvore de Decisão:")
+print(y_pred_arvore)
+
+# Cálculo das métricas de avaliação do modelo de Árvore de Decisão
+accuracy_arvore = accuracy_score(
+    y_teste,
+    y_pred_arvore
+)
+
+recall_arvore = recall_score(
+    y_teste,
+    y_pred_arvore,
+    average="macro"
+)
+
+matriz_arvore = confusion_matrix(
+    y_teste,
+    y_pred_arvore
+)
+
+print("\n===== ÁRVORE DE DECISÃO =====")
+print("Acurácia:", accuracy_arvore)
+print("Recall médio:", recall_arvore)
+print("\nMatriz de confusão:")
+print(matriz_arvore)
+
+# Gerar a matriz de confusão para o modelo de Árvore de Decisão
+disp = ConfusionMatrixDisplay(
+    confusion_matrix=matriz_arvore,
+    display_labels=["Classe 0", "Classe 1", "Classe 2"]
+)
+
+disp.plot()
+plt.title("Matriz de Confusão - Árvore de Decisão")
+plt.tight_layout()
+
+plt.savefig(
+    "graficos/matriz_arvore.png"
+)
+
+plt.close()
